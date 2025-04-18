@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>recycle for better AI</title>
+  <link rel="manifest" href="manifest.json">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="Dubai Trip">
+  <link rel="apple-touch-icon" href="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcScxOUQ5kLNMUWASQ7Y8PD2mMJkYzo-dE21xA&s">
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: 'Poppins', sans-serif;
+      background: #f7f7f7;
+      color: #333;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+  
+    h1 {
+      font-size: 2.5rem;
+      margin-bottom: 20px;
+      color: #7b2cbf;
+    }
+  
+    #webcam-container {
+      margin: 20px 0;
+      border: 3px solid #7b2cbf;
+      border-radius: 15px;
+      overflow: hidden;
+      box-shadow: 0 4px 20px rgba(123, 44, 191, 0.2);
+    }
+  
+    #label-container {
+      font-size: 1.4rem;
+      text-align: center;
+      margin-top: 20px;
+      background-color: white;
+      padding: 20px 30px;
+      border-radius: 15px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+      color: #7b2cbf;
+    }
+  
+    .prediction {
+      font-weight: bold;
+    }
+  
+    .label {
+      font-size: 1.8rem;
+      margin-right: 10px;
+      color: #5e17eb;
+    }
+  
+    .confidence {
+      color: #333;
+      font-size: 1.4rem;
+    }
+  
+    button {
+      padding: 12px 25px;
+      font-size: 1rem;
+      margin: 10px;
+      border: none;
+      border-radius: 10px;
+      background-color: #7b2cbf;
+      color: white;
+      cursor: pointer;
+      transition: 0.3s ease;
+      box-shadow: 0 4px 12px rgba(123, 44, 191, 0.3);
+    }
+  
+    button:hover {
+      background-color: #5e17eb;
+      transform: translateY(-2px);
+      box-shadow: 0 6px 15px rgba(94, 23, 235, 0.4);
+    }
+  
+    button:disabled {
+      background-color: #bbb;
+      color: #fff;
+      cursor: not-allowed;
+    }
+  </style>
+  
+
+</head>
+<body>
+  <H1>Recycle for better AI Image Model</H1>
+  <button id="start-btn">Start</button>
+  <button id="stop-btn" disabled>Stop</button>
+  
+<div id="webcam-container"></div>
+<div id="label-container"></div>
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest/dist/tf.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@teachablemachine/image@latest/dist/teachablemachine-image.min.js"></script>
+
+<script type="text/javascript">
+    const URL = "https://teachablemachine.withgoogle.com/models/-ZY7kHDEg/";
+
+    let model, webcam, labelContainer, maxPredictions;
+    let isRunning = false;
+    let loopId = null;
+
+    async function init() {
+        const modelURL = URL + "model.json";
+        const metadataURL = URL + "metadata.json";
+
+        model = await tmImage.load(modelURL, metadataURL);
+        maxPredictions = model.getTotalClasses();
+
+        const flip = true;
+        webcam = new tmImage.Webcam(200, 200, flip);
+        await webcam.setup();
+        await webcam.play();
+        isRunning = true;
+        loopId = requestAnimationFrame(loop);
+
+        document.getElementById("webcam-container").appendChild(webcam.canvas);
+        labelContainer = document.getElementById("label-container");
+
+        document.getElementById("start-btn").disabled = true;
+        document.getElementById("stop-btn").disabled = false;
+    }
+
+    async function loop() {
+        if (!isRunning) return;
+        webcam.update();
+        await predict();
+        loopId = requestAnimationFrame(loop);
+    }
+
+    async function predict() {
+        const prediction = await model.predict(webcam.canvas);
+
+        const highest = prediction.reduce((prev, current) => {
+            return (prev.probability > current.probability) ? prev : current;
+        });
+
+        labelContainer.innerHTML = `<div class="prediction">
+            <span class="label">${highest.className}</span>: 
+            <span class="confidence">${(highest.probability * 100).toFixed(1)}%</span>
+        </div>`;
+    }
+
+    function stopWebcam() {
+        isRunning = false;
+        webcam.stop();
+        cancelAnimationFrame(loopId);
+        document.getElementById("webcam-container").innerHTML = "";
+        labelContainer.innerHTML = "";
+        document.getElementById("start-btn").disabled = false;
+        document.getElementById("stop-btn").disabled = true;
+    }
+
+    document.getElementById("start-btn").addEventListener("click", init);
+    document.getElementById("stop-btn").addEventListener("click", stopWebcam);
+</script>
+
+
+</body>
+</html>
