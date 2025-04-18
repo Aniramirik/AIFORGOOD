@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Recycle for better AI</title>
+  <title>recycle for better AI</title>
   <link rel="manifest" href="manifest.json">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
@@ -89,105 +89,82 @@
       cursor: not-allowed;
     }
   </style>
+  
+
 </head>
 <body>
-  <h1>Recycle for better AI Image Model</h1>
+  <H1>Recycle for better AI Image Model</H1>
   <button id="start-btn">Start</button>
   <button id="stop-btn" disabled>Stop</button>
-  <button id="switch-camera-btn" disabled>Switch Camera</button>
+  
+<div id="webcam-container"></div>
+<div id="label-container"></div>
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest/dist/tf.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@teachablemachine/image@latest/dist/teachablemachine-image.min.js"></script>
 
-  <div id="webcam-container"></div>
-  <div id="label-container"></div>
-
-  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest/dist/tf.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@teachablemachine/image@latest/dist/teachablemachine-image.min.js"></script>
-
-  <script type="text/javascript">
+<script type="text/javascript">
     const URL = "https://teachablemachine.withgoogle.com/models/-ZY7kHDEg/";
 
     let model, webcam, labelContainer, maxPredictions;
     let isRunning = false;
     let loopId = null;
-    let currentStream;
 
     async function init() {
-      const modelURL = URL + "model.json";
-      const metadataURL = URL + "metadata.json";
+        const modelURL = URL + "model.json";
+        const metadataURL = URL + "metadata.json";
 
-      model = await tmImage.load(modelURL, metadataURL);
-      maxPredictions = model.getTotalClasses();
+        model = await tmImage.load(modelURL, metadataURL);
+        maxPredictions = model.getTotalClasses();
 
-      const flip = true;
-      webcam = new tmImage.Webcam(200, 200, flip);
-      await setupWebcam("user");
+        const flip = true;
+        webcam = new tmImage.Webcam(200, 200, flip);
+        await webcam.setup();
+        await webcam.play();
+        isRunning = true;
+        loopId = requestAnimationFrame(loop);
 
-      document.getElementById("webcam-container").appendChild(webcam.canvas);
-      labelContainer = document.getElementById("label-container");
+        document.getElementById("webcam-container").appendChild(webcam.canvas);
+        labelContainer = document.getElementById("label-container");
 
-      document.getElementById("start-btn").disabled = true;
-      document.getElementById("stop-btn").disabled = false;
-      document.getElementById("switch-camera-btn").disabled = false;
-    }
-
-    async function setupWebcam(cameraType) {
-      const constraints = { video: { facingMode: cameraType } };
-      const stream = await navigator.mediaDevices.getUserMedia(constraints);
-
-      if (currentStream) {
-        const tracks = currentStream.getTracks();
-        tracks.forEach(track => track.stop());
-      }
-
-      webcam.setup(stream);
-      currentStream = stream;
-      await webcam.play();
-      isRunning = true;
-      loopId = requestAnimationFrame(loop);
+        document.getElementById("start-btn").disabled = true;
+        document.getElementById("stop-btn").disabled = false;
     }
 
     async function loop() {
-      if (!isRunning) return;
-      webcam.update();
-      await predict();
-      loopId = requestAnimationFrame(loop);
+        if (!isRunning) return;
+        webcam.update();
+        await predict();
+        loopId = requestAnimationFrame(loop);
     }
 
     async function predict() {
-      const prediction = await model.predict(webcam.canvas);
+        const prediction = await model.predict(webcam.canvas);
 
-      const highest = prediction.reduce((prev, current) => {
-        return (prev.probability > current.probability) ? prev : current;
-      });
+        const highest = prediction.reduce((prev, current) => {
+            return (prev.probability > current.probability) ? prev : current;
+        });
 
-      labelContainer.innerHTML = `<div class="prediction">
-          <span class="label">${highest.className}</span>: 
-          <span class="confidence">${(highest.probability * 100).toFixed(1)}%</span>
-      </div>`;
+        labelContainer.innerHTML = <div class="prediction">
+            <span class="label">${highest.className}</span>: 
+            <span class="confidence">${(highest.probability * 100).toFixed(1)}%</span>
+        </div>;
     }
 
     function stopWebcam() {
-      isRunning = false;
-      webcam.stop();
-      cancelAnimationFrame(loopId);
-      document.getElementById("webcam-container").innerHTML = "";
-      labelContainer.innerHTML = "";
-      document.getElementById("start-btn").disabled = false;
-      document.getElementById("stop-btn").disabled = true;
-      document.getElementById("switch-camera-btn").disabled = true;
-    }
-
-    async function switchCamera() {
-      const currentCamera = webcam.videoStream.getVideoTracks()[0].getSettings().facingMode;
-      const newCamera = currentCamera === "user" ? "environment" : "user";
-      await setupWebcam(newCamera);
+        isRunning = false;
+        webcam.stop();
+        cancelAnimationFrame(loopId);
+        document.getElementById("webcam-container").innerHTML = "";
+        labelContainer.innerHTML = "";
+        document.getElementById("start-btn").disabled = false;
+        document.getElementById("stop-btn").disabled = true;
     }
 
     document.getElementById("start-btn").addEventListener("click", init);
     document.getElementById("stop-btn").addEventListener("click", stopWebcam);
-    document.getElementById("switch-camera-btn").addEventListener("click", switchCamera);
-  </script>
+</script>
+
 
 </body>
 </html>
-
 
