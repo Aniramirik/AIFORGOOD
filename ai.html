@@ -89,25 +89,26 @@
       cursor: not-allowed;
     }
   </style>
-  
-
 </head>
 <body>
   <H1>Recycle for better AI Image Model</H1>
   <button id="start-btn">Start</button>
   <button id="stop-btn" disabled>Stop</button>
+  <button id="flip-btn">Flip Camera</button>
   
-<div id="webcam-container"></div>
-<div id="label-container"></div>
-<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest/dist/tf.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@teachablemachine/image@latest/dist/teachablemachine-image.min.js"></script>
+  <div id="webcam-container"></div>
+  <div id="label-container"></div>
 
-<script type="text/javascript">
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest/dist/tf.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@teachablemachine/image@latest/dist/teachablemachine-image.min.js"></script>
+
+  <script type="text/javascript">
     const URL = "https://teachablemachine.withgoogle.com/models/-ZY7kHDEg/";
 
     let model, webcam, labelContainer, maxPredictions;
     let isRunning = false;
     let loopId = null;
+    let flip = true; // Default is true (front camera)
 
     async function init() {
         const modelURL = URL + "model.json";
@@ -116,7 +117,6 @@
         model = await tmImage.load(modelURL, metadataURL);
         maxPredictions = model.getTotalClasses();
 
-        const flip = true;
         webcam = new tmImage.Webcam(200, 200, flip);
         await webcam.setup();
         await webcam.play();
@@ -160,10 +160,16 @@
         document.getElementById("stop-btn").disabled = true;
     }
 
+    function flipCamera() {
+        flip = !flip;  // Toggle the camera
+        stopWebcam();
+        init();
+    }
+
     document.getElementById("start-btn").addEventListener("click", init);
     document.getElementById("stop-btn").addEventListener("click", stopWebcam);
-</script>
-
-
+    document.getElementById("flip-btn").addEventListener("click", flipCamera);
+  </script>
 </body>
 </html>
+
