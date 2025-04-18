@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>recycle for better AI</title>
+  <title>Recycle for better AI</title>
   <link rel="manifest" href="manifest.json">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
@@ -91,11 +91,11 @@
   </style>
 </head>
 <body>
-  <H1>Recycle for better AI Image Model</H1>
+  <h1>Recycle for better AI Image Model</h1>
   <button id="start-btn">Start</button>
   <button id="stop-btn" disabled>Stop</button>
-  <button id="flip-btn">Flip Camera</button>
-  
+  <button id="switch-camera-btn" disabled>Switch Camera</button>
+
   <div id="webcam-container"></div>
   <div id="label-container"></div>
 
@@ -108,68 +108,92 @@
     let model, webcam, labelContainer, maxPredictions;
     let isRunning = false;
     let loopId = null;
-    let flip = true; // Default is true (front camera)
+    let currentStream;
 
     async function init() {
-        const modelURL = URL + "model.json";
-        const metadataURL = URL + "metadata.json";
+      const modelURL = URL + "model.json";
+      const metadataURL = URL + "metadata.json";
 
-        model = await tmImage.load(modelURL, metadataURL);
-        maxPredictions = model.getTotalClasses();
+      model = await tmImage.load(modelURL, metadataURL);
+      maxPredictions = model.getTotalClasses();
 
-        webcam = new tmImage.Webcam(200, 200, flip);
-        await webcam.setup();
-        await webcam.play();
-        isRunning = true;
-        loopId = requestAnimationFrame(loop);
+      const flip = true;
+      webcam = new tmImage.Webcam(200, 200, flip);
+      await setupWebcam();
 
-        document.getElementById("webcam-container").appendChild(webcam.canvas);
-        labelContainer = document.getElementById("label-container");
+      document.getElementById("webcam-container").appendChild(webcam.canvas);
+      labelContainer = document.getElementById("label-container");
 
-        document.getElementById("start-btn").disabled = true;
-        document.getElementById("stop-btn").disabled = false;
+      document.getElementById("start-btn").disabled = true;
+      document.getElementById("stop-btn").disabled = false;
+      document.getElementById("switch-camera-btn").disabled = false;
+    }
+
+    async function setupWebcam() {
+      // Get the webcam stream
+      const constraints = { video: { facingMode: "user" } }; // Front camera by default
+      const stream = await navigator.mediaDevices.getUserMedia(constraints);
+      
+      // Set the webcam stream to be used by Teachable Machine
+      webcam.setup(stream);
+      await webcam.play();
+      isRunning = true;
+      loopId = requestAnimationFrame(loop);
     }
 
     async function loop() {
-        if (!isRunning) return;
-        webcam.update();
-        await predict();
-        loopId = requestAnimationFrame(loop);
+      if (!isRunning) return;
+      webcam.update();
+      await predict();
+      loopId = requestAnimationFrame(loop);
     }
 
     async function predict() {
-        const prediction = await model.predict(webcam.canvas);
+      const prediction = await model.predict(webcam.canvas);
 
-        const highest = prediction.reduce((prev, current) => {
-            return (prev.probability > current.probability) ? prev : current;
-        });
+      const highest = prediction.reduce((prev, current) => {
+        return (prev.probability > current.probability) ? prev : current;
+      });
 
-        labelContainer.innerHTML = `<div class="prediction">
-            <span class="label">${highest.className}</span>: 
-            <span class="confidence">${(highest.probability * 100).toFixed(1)}%</span>
-        </div>`;
+      labelContainer.innerHTML = `<div class="prediction">
+          <span class="label">${highest.className}</span>: 
+          <span class="confidence">${(highest.probability * 100).toFixed(1)}%</span>
+      </div>`;
     }
 
     function stopWebcam() {
-        isRunning = false;
-        webcam.stop();
-        cancelAnimationFrame(loopId);
-        document.getElementById("webcam-container").innerHTML = "";
-        labelContainer.innerHTML = "";
-        document.getElementById("start-btn").disabled = false;
-        document.getElementById("stop-btn").disabled = true;
+      isRunning = false;
+      webcam.stop();
+      cancelAnimationFrame(loopId);
+      document.getElementById("webcam-container").innerHTML = "";
+      labelContainer.innerHTML = "";
+      document.getElementById("start-btn").disabled = false;
+      document.getElementById("stop-btn").disabled = true;
+      document.getElementById("switch-camera-btn").disabled = true;
     }
 
-    function flipCamera() {
-        flip = !flip;  // Toggle the camera
-        stopWebcam();
-        init();
+    async function switchCamera() {
+      // Stop the current webcam stream
+      if (currentStream) {
+        const tracks = currentStream.getTracks();
+        tracks.forEach(track => track.stop());
+      }
+
+      // Switch to the other camera (back camera)
+      const constraints = { video: { facingMode: "environment" } }; // Back camera
+      const stream = await navigator.mediaDevices.getUserMedia(constraints);
+
+      // Set the new stream to the webcam
+      webcam.setup(stream);
+      await webcam.play();
     }
 
     document.getElementById("start-btn").addEventListener("click", init);
     document.getElementById("stop-btn").addEventListener("click", stopWebcam);
-    document.getElementById("flip-btn").addEventListener("click", flipCamera);
+    document.getElementById("switch-camera-btn").addEventListener("click", switchCamera);
   </script>
+
 </body>
 </html>
+
 
