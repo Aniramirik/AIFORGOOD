@@ -7,8 +7,8 @@
   <link rel="manifest" href="manifest.json">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
-  <meta name="apple-mobile-web-app-title" content="AI FOR GOOD">
-  <link rel="apple-touch-icon" href="https://www.canva.com/design/DAGk_-knADA/83WCPiZSG3Ck0pN9NAzd-g/view">
+  <meta name="apple-mobile-web-app-title" content="recycle for better AI">
+  <link rel="apple-touch-icon" href="">
   <style>
     body {
       margin: 0;
@@ -144,10 +144,10 @@
             return (prev.probability > current.probability) ? prev : current;
         });
 
-        labelContainer.innerHTML = <div class="prediction">
+        labelContainer.innerHTML = `<div class="prediction">
             <span class="label">${highest.className}</span>: 
             <span class="confidence">${(highest.probability * 100).toFixed(1)}%</span>
-        </div>;
+        </div>`;
     }
 
     function stopWebcam() {
