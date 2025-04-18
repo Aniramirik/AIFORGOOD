@@ -119,7 +119,7 @@
 
       const flip = true;
       webcam = new tmImage.Webcam(200, 200, flip);
-      await setupWebcam();
+      await setupWebcam("user");
 
       document.getElementById("webcam-container").appendChild(webcam.canvas);
       labelContainer = document.getElementById("label-container");
@@ -129,13 +129,17 @@
       document.getElementById("switch-camera-btn").disabled = false;
     }
 
-    async function setupWebcam() {
-      // Get the webcam stream
-      const constraints = { video: { facingMode: "user" } }; // Front camera by default
+    async function setupWebcam(cameraType) {
+      const constraints = { video: { facingMode: cameraType } };
       const stream = await navigator.mediaDevices.getUserMedia(constraints);
-      
-      // Set the webcam stream to be used by Teachable Machine
+
+      if (currentStream) {
+        const tracks = currentStream.getTracks();
+        tracks.forEach(track => track.stop());
+      }
+
       webcam.setup(stream);
+      currentStream = stream;
       await webcam.play();
       isRunning = true;
       loopId = requestAnimationFrame(loop);
@@ -173,19 +177,9 @@
     }
 
     async function switchCamera() {
-      // Stop the current webcam stream
-      if (currentStream) {
-        const tracks = currentStream.getTracks();
-        tracks.forEach(track => track.stop());
-      }
-
-      // Switch to the other camera (back camera)
-      const constraints = { video: { facingMode: "environment" } }; // Back camera
-      const stream = await navigator.mediaDevices.getUserMedia(constraints);
-
-      // Set the new stream to the webcam
-      webcam.setup(stream);
-      await webcam.play();
+      const currentCamera = webcam.videoStream.getVideoTracks()[0].getSettings().facingMode;
+      const newCamera = currentCamera === "user" ? "environment" : "user";
+      await setupWebcam(newCamera);
     }
 
     document.getElementById("start-btn").addEventListener("click", init);
